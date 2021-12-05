@@ -12,9 +12,4 @@ $4 < $2 { ys = -1 }
     v[$1][$2]++
   }
 }
-END {
-  for(x in v)
-    for(y in v[x])
-      c += v[x][y] > 1
-  print c
-}
+END { for(x in v) for(y in v[x]) c += v[x][y] > 1; print c }
