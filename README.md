@@ -85,7 +85,7 @@ function choose(tree, cmp, depth) {
   o = tree[1][2]
   if(!z && !o) return
   res = (z && !o) ? 0 : (!z && o) || @cmp(z, o)
-  return res * (2 ** depth) + choose(tree[res], cmp, depth - 1)
+  return lshift(res, depth) + choose(tree[res], cmp, depth - 1)
 }
 function mcc(zeros, ones) { return ones >= zeros }
 function lcc(zeros, ones) { return ones < zeros  }
