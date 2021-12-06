@@ -70,7 +70,7 @@ END {
 }
 ```
 
-This was tough to get the tree to work, manipulating arrays, especially when they may be uninitialised is fiddly, but I'm happy with how it turned out. It also features indirect calling with the `@variable` feature. Unfortunately it doesn't work if you just pass an operator, so I had to declare `mcc` and `lcc`
+This was tough to get the tree to work, but I'm really happy with the result. It reads each line into a binary trie with the subtotals stored on each node, then when answering it navigates down the tree based on the subtotals and the supplied comparison function. It also features indirect calling with the `@variable` feature. Unfortunately it doesn't work if you just pass an operator, so I had to declare `mcc` and `lcc`
 
 ```awk
 function add_values(tree, values, i) {
