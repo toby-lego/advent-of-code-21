@@ -38,7 +38,7 @@ END { print count }
 
 ### Day 2
 
-Again the challenges match `awk` well.
+Again `awk` matches the challenges well.
 
 ```awk
 /up/      { depth -= $2 }
