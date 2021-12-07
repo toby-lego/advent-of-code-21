@@ -212,6 +212,21 @@ END {
 }
 ```
 
+I later thought of a smaller solution. Instead of shifting every element to the left each day, we can just treat it like a circular array and shift the offset. Then all we have to do is to add the zeros to what will be the sixes each day.
+
+```awk
+BEGIN { RS = "," }
+{ v[$1] += 1 }
+END {
+  for(d = 0; d < 256; d++)
+    v[(d + 7) % 9] += v[d % 9]
+
+  for(i in v)
+    c += v[i]
+  print c
+}
+```
+
 ### Day 7
 
 ```awk
