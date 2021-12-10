@@ -417,6 +417,7 @@ func search(start, queue, visited, options, i) {
 
   return length(visited)
 }
+```
 
 ### Day 10
 
