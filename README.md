@@ -229,6 +229,8 @@ END {
 
 ### Day 7
 
+After solving these I of course found out online that they just the median and the mean of the points which can be done a lot easier. This approach was an attempt to be more efficient than the brute force solution, by recalculating with each number added and only stepping in the direction it could possibly be moving with the new data to limit the work done. It gives the correct solution and when I put counters inside the loop in the cost function I can see it is significantly less comparisons than a brute force attempt on the whole problem space would require.
+
 ```awk
 func abs(n) { return n < 0 ? -n : n }
 func cost(n, acc) { for(i in v) acc += v[i] * abs(i - n); return acc }
@@ -236,7 +238,7 @@ BEGIN { RS = "," }
 NR == 1 { position = $1 }
 {
   v[$1] += 1;
-  fuel = cost(position)
+  fuel += abs($1 - position)
   step = $1 > position ? 1 : -1
   while(1) {
     new_position = position + step
@@ -251,7 +253,7 @@ END { print fuel }
 
 ```awk
 func abs(n) { return n < 0 ? -n : n }
-func cost(p, acc) {
+func cost(p, acc, n) {
   for(i in v) {
     n = abs(i - p)
     acc += v[i] * n * (n + 1) / 2
@@ -262,7 +264,8 @@ BEGIN { RS = "," }
 NR == 1 { position = $1 }
 {
   v[$1] += 1;
-  fuel = cost(position)
+  n = abs($1 - position)
+  fuel += $1 * n * (n - 1) / 2
   step = $1 > position ? 1 : -1
   while(1) {
     new_position = position + step
@@ -273,4 +276,204 @@ NR == 1 { position = $1 }
   }
 }
 END { print fuel }
+```
+
+### Day 8
+
+Part one was pretty easy, again using the fact that booleans and 0 and 1 to have `accumulator += conditional`.
+
+```awk
+BEGIN { m[2] = m[3] = m[4] = m[7] = 1 }
+{
+  output = 0
+  for(i = 1; i <= NF; i++) {
+    output += $i == "|"
+    acc += output && length($i) in m
+  }
+}
+END { print acc }
+```
+
+This was straightforward but a lot of code. I was expecting it to be a harder problem with some of the rows not including all the numbers so you'd have to find multiple ways of deriving the common digits, but luckily this was enough.
+
+```awk
+func sort(str, a, i) { split(str, a, ""); asort(a); str = ""; for(i = 1; i <= length(a); i++) str = str a[i]; return str }
+func subtract(from, values, arr, i) { split(values, arr, ""); for(i in arr) sub(arr[i], "", from); return from }
+func is_subset(from, values, s, l) { s = subtract(from, values); return length(from) - length(values) == length(s) ? s : 0; }
+{
+  delete digits
+  delete fives
+  delete sixes
+
+  for(i = 1; i <= NF; i++) {
+    if($i == "|") continue
+    value = sort($i)
+    len = length($i)
+    if(len == 2) digits[1] = value
+    if(len == 3) digits[7] = value
+    if(len == 4) digits[4] = value
+    if(len == 5) fives[length(fives)] = value
+    if(len == 6) sixes[length(sixes)] = value
+    if(len == 7) digits[8] = value
+  }
+
+  for(i in sixes) {
+    if(is_subset(sixes[i], digits[4]))
+      digits[9] = sixes[i]
+    else if(is_subset(sixes[i], digits[1]))
+      digits[0] = sixes[i]
+    else
+      digits[6] = sixes[i]
+  }
+
+  for(i in fives) {
+    if(is_subset(fives[i], digits[1]))
+      digits[3] = fives[i]
+    else if(is_subset(digits[6], fives[i]))
+      digits[5] = fives[i]
+    else
+      digits[2] = fives[i]
+  }
+
+  # invert mapping
+  for(i = 0; i <= 9; i++) {
+    digits[digits[i]] = i
+    delete digits[i]
+  }
+
+  i = 1
+  delete outputs
+  while($i != "|") { i += 1 }
+  for(j = i; j <= NF; j++) {
+    outputs[j - i] = $j
+  }
+
+  output = ""
+  for(i in outputs) {
+    output = output digits[sort(outputs[i])]
+  }
+  acc += output
+}
+END { print acc }
+```
+
+### Day 9
+
+One script for both parts today. I wouldn't have thought this would be the best language for writing graph traversals but it turned out to be pretty easy. Push and popi are really not duals in this one but I couldn't find better names.
+
+```awk
+BEGIN { FS = "" }
+{ for(i = 1; i <= NF; i++) v[NR][i] = $i }
+END {
+  for(row = 1; row <= NR; row++)
+    for(col = 1; col <= NF; col++) {
+      adjacent(row, col, adj)
+
+      h = 0
+      for(i in adj) {
+        h += adj[i] <= v[row][col]
+      }
+      if(!h) {
+        low[row "," col] = v[row][col]
+      }
+    }
+ 
+  for(i in low)
+    acc += low[i] + 1
+  print acc
+
+  for(i in low)
+    solution[i] = search(i)
+  asort(solution)
+  l = length(solution)
+  print solution[l] * solution[l - 1] * solution[l - 2]
+}
+func push(arr, row, col) {
+  if(row < 1 || col < 1 || row > NR || col > NF) return
+  arr[row "," col] = v[row][col]
+}
+func adjacent(row, col, arr) { 
+  delete arr
+  push(arr, row - 1, col    )
+  push(arr, row,     col - 1)
+  push(arr, row,     col + 1)
+  push(arr, row + 1, col    )
+}
+func popi(queue, i, v) { for(i in queue) { v=i; break } delete queue[i]; return v }
+func search(start, queue, visited, options, i) {
+  queue[start] = 1
+
+  do {
+    start = popi(queue)
+    split(start, coords, ",")
+    adjacent(coords[1], coords[2], options)
+
+    for(i in options)
+      if(!(i in visited) && options[i] != "9")
+        queue[i] = 1
+
+    visited[start] = 1
+  } while (length(queue))
+
+  return length(visited)
+}
+
+### Day 10
+
+My syntax highlighting couldn't handle the declarations on this one properly but I was happy the queue method in the first method translated so well to the second part.
+
+```awk
+BEGIN {
+  FS = ""
+  s[")"] = 3; s["]"] = 57; s["}"] = 1197; s[">"] = 25137
+  o["("] = ")"; o["{"] = "}"; o["["] = "]"; o["<"] = ">"
+}
+func push(arr, v) { arr[length(arr)] = v; }
+func pop(arr, v)  { v = arr[length(arr) - 1]; delete arr[length(arr) - 1]; return v }
+{
+  delete arr
+  for(i = 1; i <= NF; i++)
+    if($i in o)
+      push(arr, $i)
+
+    else {
+      v = pop(arr)
+      if($i != o[v]) {
+        acc += s[$i]
+        next
+      }
+    }
+}
+END { print acc }
+```
+
+```awk
+BEGIN {
+  FS = ""
+  s[")"] = 1; s["]"] = 2; s["}"] = 3; s[">"] = 4
+  o["("] = ")"; o["{"] = "}"; o["["] = "]"; o["<"] = ">"
+}
+func push(arr, v) { arr[length(arr)] = v; }
+func pop(arr, v)  { v = arr[length(arr) - 1]; delete arr[length(arr) - 1]; return v }
+{
+  delete arr
+
+  for(i = 1; i <= NF; i++)
+    if($i in o)
+      push(arr, $i)
+    else {
+      v = pop(arr)
+      if($i != o[v]) next
+    }
+
+  acc = 0
+  while(length(arr))
+    acc = (acc * 5) + s[o[pop(arr)]]
+
+  scores[NR] = acc
+}
+END {
+  asort(scores)
+  print scores[(length(scores) + 1) / 2]
+}
 ```
