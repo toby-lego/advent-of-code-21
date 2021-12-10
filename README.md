@@ -436,7 +436,6 @@ func pop(arr, v)  { v = arr[length(arr) - 1]; delete arr[length(arr) - 1]; retur
   for(i = 1; i <= NF; i++)
     if($i in o)
       push(arr, $i)
-
     else {
       v = pop(arr)
       if($i != o[v]) {
